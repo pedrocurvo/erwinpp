@@ -16,7 +16,7 @@
 #include <cstdint>
 
 using DataType = double;
-using IndexType = int64_t;
+using IndexType = long;
 using MaskType = bool;
 
 /**
