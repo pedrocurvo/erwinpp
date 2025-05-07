@@ -186,13 +186,10 @@ In case you have any ideas for future work based on Erwin or if you see possible
 
 ## BibTeX
 ```
-@misc{zhdanov2025erwintreebasedhierarchicaltransformer,
-      title={Erwin: A Tree-based Hierarchical Transformer for Large-scale Physical Systems}, 
-      author={Maksim Zhdanov and Max Welling and Jan-Willem van de Meent},
-      year={2025},
-      eprint={2502.17019},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG},
-      url={https://arxiv.org/abs/2502.17019}, 
+@inproceedings{zhdanov2025erwin,
+    title={Erwin: A Tree-based Hierarchical Transformer for Large-scale Physical Systems}, 
+    author={Maksim Zhdanov and Max Welling and Jan-Willem van de Meent},
+    booktitle = {International {Conference} on {Machine} {Learning} ({ICML})},
+    year = {2025},
 }
 ```
