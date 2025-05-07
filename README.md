@@ -1,4 +1,4 @@
-# Erwin Transformer
+# Erwin Transformer (ICML 2025)
 <p align="center">
     <a href="https://arxiv.org/abs/2502.17019"><strong>Erwin: A Tree-based Hierarchical Transformer for Large-scale Physical Systems</strong></a><br/>
     <a href="https://maxxxzdn.github.io/">Max Zhdanov</a>, Max Welling, Jan-Willem van de Meent
