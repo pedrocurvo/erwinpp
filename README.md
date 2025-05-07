@@ -4,7 +4,7 @@
   <a href="https://arxiv.org/abs/2502.17019"><img src="misc/abstract.png?raw=True" alt="Figure 1" width="80%"></a>
 </p>
 
-<h3>Erwin: A Tree-based Hierarchical Transformer for Large-scale Physical Systems (ICML 2025)</h3>
+<h3>Erwin: A Tree-based Hierarchical Transformer (ICML 2025)</h3>
 
 <b> Authors: </b> <a href="https://maxxxzdn.github.io/">Maksim Zhdanov</a>, Max Welling, Jan-Willem van de Meent
 
