@@ -198,11 +198,12 @@ class BallMSA(nn.Module):
         # x = F.scaled_dot_product_attention(q, k, v, attn_mask=self.create_attention_mask(pos))
         # x = rearrange(x, "n H m E -> (n m) (H E)", H=self.num_heads, m=self.ball_size)
         #stack qkv
-        qvk = torch.stack([q,k,v], dim=2) 
+        qvk = torch.stack([q,k,v], dim=2) # n H m E
+        # n = n_balls H = num_heads m = ball_size K = 3 E = head dim
         #change order n m qkv h e
         qkv = rearrange(qvk, "K n h m e -> n m K h e").contiguous()
-
-
+        qkv = rearrange(qkv, "n m K h e -> n m 3 h e") 
+        qkv = qkv.half() 
         #flash atten
         x = flash_attn_qkvpacked_func(qkv)
 
