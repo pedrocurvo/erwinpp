@@ -12,6 +12,8 @@ from dataclasses import dataclass
 
 from balltree import build_balltree_with_rotations
 
+from flash_attn.flash_attention import flash_attn_qkvpacked_func
+
 
 def scatter_mean(src: torch.Tensor, idx: torch.Tensor, num_receivers: int):
     """ 
@@ -193,8 +195,20 @@ class BallMSA(nn.Module):
     def forward(self, x: torch.Tensor, pos: torch.Tensor):
         x = x + self.pe_proj(self.compute_rel_pos(pos))
         q, k, v = rearrange(self.qkv(x), "(n m) (H E K) -> K n H m E", H=self.num_heads, m=self.ball_size, K=3)
-        x = F.scaled_dot_product_attention(q, k, v, attn_mask=self.create_attention_mask(pos))
-        x = rearrange(x, "n H m E -> (n m) (H E)", H=self.num_heads, m=self.ball_size)
+        # x = F.scaled_dot_product_attention(q, k, v, attn_mask=self.create_attention_mask(pos))
+        # x = rearrange(x, "n H m E -> (n m) (H E)", H=self.num_heads, m=self.ball_size)
+        #stack qkv
+        qvk = torch.stack([q,k,v], dim=2) 
+        #change order n m qkv h e
+        qkv = rearrange(qvk, "K n h m e -> n m K h e").contiguous()
+
+
+        #flash atten
+        x = flash_attn_qkvpacked_func(qkv)
+
+
+        #premute order of out
+        x = rearrange(x, "n m h e -> (n m) (h e)")
         return self.proj(x)
 
 
