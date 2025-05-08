@@ -78,7 +78,7 @@ from models import ErwinTransformer
 
 config = {
     'c_in': 32,
-    'c_hidden': 32,
+    'c_hidden': [32, 64, 128, 256, 512],
     'enc_num_heads': [2, 4, 8, 16, 32],
     'enc_depths': [2, 2, 2, 6, 2],
     'dec_num_heads': [4, 4, 8, 16],
