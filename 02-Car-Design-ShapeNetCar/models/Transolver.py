@@ -8,57 +8,110 @@ ACTIVATION = {'gelu': nn.GELU, 'tanh': nn.Tanh, 'sigmoid': nn.Sigmoid, 'relu': n
               'softplus': nn.Softplus, 'ELU': nn.ELU, 'silu': nn.SiLU}
 
 
-class Physics_Attention_Irregular_Mesh(nn.Module):
-    def __init__(self, dim, heads=8, dim_head=64, dropout=0., slice_num=64):
+from erwin import ErwinTransformer
+
+class ErwinTransolver(nn.Module):
+    """Combines Transolver's token slicing with Erwin's hierarchical processing.
+    Instead of using attention between slice tokens, uses a Erwin network.
+    """
+    def __init__(
+        self, 
+        dim: int,
+        slice_num: int,
+        heads: int = 8,
+        dim_head: int = 64,
+        dropout: float = 0.0,
+        dimensionality: int = 3
+    ):
         super().__init__()
         inner_dim = dim_head * heads
         self.dim_head = dim_head
         self.heads = heads
-        self.scale = dim_head ** -0.5
-        self.softmax = nn.Softmax(dim=-1)
-        self.dropout = nn.Dropout(dropout)
-        self.temperature = nn.Parameter(torch.ones([1, heads, 1, 1]) * 0.5)
-
+        self.slice_num = slice_num
+        self.dimensionality = dimensionality
+        
+        # Input projections for slicing
         self.in_project_x = nn.Linear(dim, inner_dim)
         self.in_project_fx = nn.Linear(dim, inner_dim)
         self.in_project_slice = nn.Linear(dim_head, slice_num)
-        for l in [self.in_project_slice]:
-            torch.nn.init.orthogonal_(l.weight)  # use a principled initialization
-        self.to_q = nn.Linear(dim_head, dim_head, bias=False)
-        self.to_k = nn.Linear(dim_head, dim_head, bias=False)
-        self.to_v = nn.Linear(dim_head, dim_head, bias=False)
+        nn.init.orthogonal_(self.in_project_slice.weight)
+        
+        # Temperature parameter for slice weights
+        self.temperature = nn.Parameter(torch.ones([1, heads, 1, 1]) * 0.5)
+        
+        # Erwin network for processing slice tokens
+        self.erwin = ErwinTransformer(
+            c_in=dim_head,
+            c_hidden=[dim_head, dim_head*2],  # Two levels of hierarchy
+            ball_sizes=[min(32, slice_num), min(16, slice_num//2)],  # Progressive reduction
+            enc_num_heads=[heads//2, heads],
+            enc_depths=[2, 2],
+            dec_num_heads=[heads//2],
+            dec_depths=[2],
+            strides=[2],
+            rotate=1,  # Enable rotation for better cross-token mixing
+            decode=True,  # We need the full resolution back
+            mlp_ratio=4,
+            dimensionality=dimensionality,
+            mp_steps=0  # No need for MPNN here
+        )
+        
+        # Output projection
         self.to_out = nn.Sequential(
             nn.Linear(inner_dim, dim),
             nn.Dropout(dropout)
         )
+        
+        self.dropout = nn.Dropout(dropout)
+        self.softmax = nn.Softmax(dim=-1)
 
-    def forward(self, x):
-        # B N C
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            x: Input tensor of shape (B, N, C) where:
+               B = batch size
+               N = number of points
+               C = number of channels/features
+        Returns:
+            Reduced tensor of shape (B, slice_num, C)
+        """
         B, N, C = x.shape
-
-        ### (1) Slice
-        fx_mid = self.in_project_fx(x).reshape(B, N, self.heads, self.dim_head) \
-            .permute(0, 2, 1, 3).contiguous()  # B H N C
-        x_mid = self.in_project_x(x).reshape(B, N, self.heads, self.dim_head) \
-            .permute(0, 2, 1, 3).contiguous()  # B H N C
-        slice_weights = self.softmax(self.in_project_slice(x_mid) / self.temperature)  # B H N G
-        slice_norm = slice_weights.sum(2)  # B H G
+        
+        # Project inputs
+        fx_mid = self.in_project_fx(x).reshape(B, N, self.heads, self.dim_head).permute(0, 2, 1, 3)
+        x_mid = self.in_project_x(x).reshape(B, N, self.heads, self.dim_head).permute(0, 2, 1, 3)
+        
+        # Compute slice weights with temperature scaling
+        slice_weights = self.softmax(
+            self.in_project_slice(x_mid) / torch.clamp(self.temperature, min=0.1, max=5)
+        )
+        
+        # Normalize slice weights
+        slice_norm = slice_weights.sum(2, keepdim=True)
+        
+        # Create slice tokens through weighted aggregation
         slice_token = torch.einsum("bhnc,bhng->bhgc", fx_mid, slice_weights)
-        slice_token = slice_token / ((slice_norm + 1e-5)[:, :, :, None].repeat(1, 1, 1, self.dim_head))
-
-        ### (2) Attention among slice tokens
-        q_slice_token = self.to_q(slice_token)
-        k_slice_token = self.to_k(slice_token)
-        v_slice_token = self.to_v(slice_token)
-        dots = torch.matmul(q_slice_token, k_slice_token.transpose(-1, -2)) * self.scale
-        attn = self.softmax(dots)
-        attn = self.dropout(attn)
-        out_slice_token = torch.matmul(attn, v_slice_token)  # B H G D
-
-        ### (3) Deslice
-        out_x = torch.einsum("bhgc,bhng->bhnc", out_slice_token, slice_weights)
-        out_x = rearrange(out_x, 'b h n d -> b n (h d)')
-        return self.to_out(out_x)
+        slice_token = slice_token / (slice_norm + 1e-5)  # [B, H, G, C]
+        
+        # Process slice tokens with Erwin
+        # Reshape for Erwin: [B*H, G, C]
+        B, H, G, C = slice_token.shape
+        slice_token = slice_token.reshape(B*H, G, C)
+        
+        # Create batch indices for Erwin
+        batch_idx = torch.arange(B*H, device=x.device).repeat_interleave(G)
+        
+        # Create artificial positions for slice tokens (uniformly distributed in unit cube)
+        pos = torch.rand(B*H*G, self.dimensionality, device=x.device)
+        
+        # Process through Erwin
+        processed_tokens = self.erwin(slice_token, pos, batch_idx)
+        processed_tokens = processed_tokens.reshape(B, H, G, C)
+        
+        # Deslice using the same weights
+        out = torch.einsum("bhgc,bhng->bhnc", processed_tokens, slice_weights)
+        out = rearrange(out, 'b h n d -> b n (h d)')
+        return self.to_out(out)
 
 
 class MLP(nn.Module):
@@ -106,7 +159,7 @@ class Transolver_block(nn.Module):
         super().__init__()
         self.last_layer = last_layer
         self.ln_1 = nn.LayerNorm(hidden_dim)
-        self.Attn = Physics_Attention_Irregular_Mesh(hidden_dim, heads=num_heads, dim_head=hidden_dim // num_heads,
+        self.Attn = ErwinTransolver(hidden_dim, heads=num_heads, dim_head=hidden_dim // num_heads,
                                                      dropout=dropout, slice_num=slice_num)
         self.ln_2 = nn.LayerNorm(hidden_dim)
         self.mlp = MLP(hidden_dim, hidden_dim * mlp_ratio, hidden_dim, n_layers=0, res=False, act=act)
