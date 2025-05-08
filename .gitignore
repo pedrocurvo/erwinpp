@@ -32,3 +32,8 @@ __pycache__/
 
 shapenet_car/*
 *.out
+
+checkpoints/*
+wandb/*
+
+02-Car-Design-ShapeNetCar/shapenet_car/*
