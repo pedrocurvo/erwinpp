@@ -39,7 +39,7 @@ def parse_args():
 erwin_configs = {
     "small": {
         "c_in": 64,
-        "c_hidden": 64,
+        "c_hidden": [64, 64],
         "ball_sizes": [256, 256],
         "enc_num_heads": [8, 8],
         "enc_depths": [6, 6],
