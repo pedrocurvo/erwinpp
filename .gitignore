@@ -37,3 +37,13 @@ checkpoints/*
 wandb/*
 
 02-Car-Design-ShapeNetCar/shapenet_car/*
+
+*/balltree/balltree.egg-info/*
+*/balltree/build/*
+*/balltree/dist/*
+*/balltree/balltree.cpp
+
+balltree/balltree.egg-info/*
+balltree/build/*
+balltree/dist/*
+balltree/balltree.cpp
