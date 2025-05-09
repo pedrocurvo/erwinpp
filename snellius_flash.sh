@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=20:00:00
-#SBATCH --output=outputs/erwin_output_%A.out
+#SBATCH --output=slurm_output_%A.out
 
 module purge
 module load 2024
@@ -14,11 +14,11 @@ module load Anaconda3/2024.06-1
 module load 2023
 module load CUDA/12.4.0
 
-conda env create -f env.yaml
+# conda env create -f env.yaml
 
 
-# source activate erwin
-# cd $HOME/erwinpp
+source activate erwin
+cd $HOME/erwinpp
 
 # srun python setup.py install
 
@@ -55,4 +55,4 @@ conda env create -f env.yaml
 # srun pip install tqdm
 # 
 
-# srun python train_shapenet.py --data-path shapenet_car/mlcfd_data/preprocessed --experiment shapenet_default
+srun python train_shapenet_flash.py --data-path shapenet_car/mlcfd_data/preprocessed --experiment shapenet_flash
