@@ -1,5 +1,13 @@
 #!/bin/bash
 
+#SBATCH --partition=gpu_a100
+#SBATCH --gpus=1
+#SBATCH --job-name=erwin_large_scale
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --time=20:00:00
+#SBATCH --output=outputs/erwin_output_%A.out
+
 # make sure uv is installed, if not: 
 # curl -LsSf https://astral.sh/uv/install.sh | sh
 
