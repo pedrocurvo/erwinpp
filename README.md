@@ -1,7 +1,7 @@
 <div align="center">
 
 <p align="center">
-  <a href="https://arxiv.org/abs/2502.17019"><img src="misc/abstract.png?raw=True" alt="Figure 1" width="80%"></a>
+  <a href="https://arxiv.org/abs/2502.17019"><img src="docs/images/abstract.png?raw=True" alt="Figure 1" width="80%"></a>
 </p>
 
 <h3>Erwin: A Tree-based Hierarchical Transformer (ICML 2025)</h3>
@@ -17,26 +17,26 @@
 ### Ball Tree
 A **ball tree** is a hierarchical data structure that recursively partitions points into nested sets of similar size, where each set is represented by a ball that covers all the points in the set. The input is a point cloud, and the tree is built recursively:
 <p align="center">
-    <img src="misc/ball_tree_animation.gif" alt="Ball Tree Animation" width="40%"/>
+    <img src="docs/images/ball_tree_animation.gif" alt="Ball Tree Animation" width="40%"/>
 </p>
 
 ### Ball Tree Attention
 The main idea of the paper is to compute attention within the ball tree partitions. Once the tree is built, one can choose the level of the tree and compute attention (**Ball Tree Attention**, BTA) within the balls in parallel:
 <p align="center">
-    <img src="misc/ball_tree_levels.png" alt="Ball Tree Attention" width="90%"/>
+    <img src="docs/images/ball_tree_levels.png" alt="Ball Tree Attention" width="90%"/>
 </p>
 
 ### Hierarchical structure
 Since Ball Tree Attention is localized, we progressively coarsen and then refine the ball tree to aggregate global information following a U-Net-like structure of the model:
 <p align="center">
-    <img src="misc/ball_tree_coarsening.png" alt="Ball Tree Coarsening" width="90%"/>
+    <img src="docs/images/ball_tree_coarsening.png" alt="Ball Tree Coarsening" width="90%"/>
 </p>
 After each coarsening, Ball Tree Attention is computed. By keeping the balls of fixed size, the receptive fields grow as balls now cover a larger area.
 
 ### Computational efficiency
 The ball tree is stored in memory contiguously - at each level of the tree, points in the same ball are stored next to each other:
 <p align="center">
-    <img src="misc/layer_storage.png" alt="Contiguous storage" width="40%"/>
+    <img src="docs/images/layer_storage.png" alt="Contiguous storage" width="40%"/>
 </p>
 
 This property is critical and allows us to implement key operations described above simply via `.view` or `.mean`:
@@ -54,14 +54,14 @@ x_coarsened = pooling_fn(x.view(num_balls, ball_size * dim)) # (num_balls, dim)
 ### Cross-ball interaction
 Since ball partitions are disjoint (i.e. each point can be assigned to a single ball only), we need to enable cross-ball interaction. This would allow information to leak from one ball to another, effectively increasing the receptive field of a single layer. Our solution is inspired by SwinTransformer, however, instead of sliding windows we use rotating ball trees. By alternating between original rotated ball tree configurations, we make balls exchange information.
 <p align="center">
-    <img src="misc/ball_tree_with_rotations.png" alt="Tree examples" width="70%"/>
+    <img src="docs/images/ball_tree_with_rotations.png" alt="Tree examples" width="70%"/>
 </p>
 
 
 ### Examples of ball trees
 Below are examples of ball trees that we built in our experiments - polypeptides in molecular dynamics and cars in ShapeNet-Car:
 <p align="center">
-    <img src="misc/trees_examples.png" alt="Tree examples" width="70%"/>
+    <img src="docs/images/trees_examples.png" alt="Tree examples" width="70%"/>
 </p>
 
 ## Using Erwin
