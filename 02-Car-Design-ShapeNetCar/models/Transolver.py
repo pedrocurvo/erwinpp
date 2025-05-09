@@ -8,7 +8,7 @@ ACTIVATION = {'gelu': nn.GELU, 'tanh': nn.Tanh, 'sigmoid': nn.Sigmoid, 'relu': n
               'softplus': nn.Softplus, 'ELU': nn.ELU, 'silu': nn.SiLU}
 
 
-from erwin import ErwinTransformer
+from .erwin import ErwinTransformer
 
 class ErwinTransolver(nn.Module):
     """Combines Transolver's token slicing with Erwin's hierarchical processing.
@@ -94,18 +94,35 @@ class ErwinTransolver(nn.Module):
         slice_token = slice_token / (slice_norm + 1e-5)  # [B, H, G, C]
         
         # Process slice tokens with Erwin
-        # Reshape for Erwin: [B*H, G, C]
+        # Shape explanation:
+        # B: batch size (number of samples in the batch)
+        # H: number of attention heads
+        # G: number of slice tokens (slice_num)
+        # C: channels per head (dim_head)
         B, H, G, C = slice_token.shape
-        slice_token = slice_token.reshape(B*H, G, C)
         
-        # Create batch indices for Erwin
-        batch_idx = torch.arange(B*H, device=x.device).repeat_interleave(G)
+        # We use Erwin to compute attention between slice tokens. Each slice token represents
+        # a weighted aggregation of the input features. By applying Erwin, we allow these slice tokens
+        # to interact with each other through hierarchical ball attention, effectively capturing
+        # multi-scale relationships between different regions of the input.
+        
+        # Reshape for Erwin: [B*H, G, C] -> [B*H*G, C]
+        slice_token = slice_token.reshape(B*H*G, C)  # Flatten to [total_points, channels]
         
         # Create artificial positions for slice tokens (uniformly distributed in unit cube)
-        pos = torch.rand(B*H*G, self.dimensionality, device=x.device)
+        pos = torch.rand(B*H*G, self.dimensionality, device=x.device)  # [total_points, dims]
         
-        # Process through Erwin
+        # Create batch indices - each slice token needs its own batch index
+        batch_idx = torch.arange(B*H, device=x.device).repeat_interleave(G)
+        
+        # Add safety checks
+        assert slice_token.shape[0] == pos.shape[0] == batch_idx.shape[0], \
+            f"Shapes mismatch: features {slice_token.shape}, pos {pos.shape}, batch {batch_idx.shape}"
+        
+        # Process through Erwin - it expects [num_points, channels] for features
         processed_tokens = self.erwin(slice_token, pos, batch_idx)
+        
+        # Reshape back to original format [B, H, G, C]
         processed_tokens = processed_tokens.reshape(B, H, G, C)
         
         # Deslice using the same weights
