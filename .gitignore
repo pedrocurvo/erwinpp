@@ -34,7 +34,7 @@ shapenet_car/*
 *.out
 
 checkpoints/*
-wandb/*
+wandb/
 
 02-Car-Design-ShapeNetCar/shapenet_car/*
 
