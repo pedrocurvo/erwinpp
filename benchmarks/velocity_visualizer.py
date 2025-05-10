@@ -29,3 +29,9 @@ plt.savefig("erwin_memory_plot.pdf")
 pivot = df.pivot(index="num_points", columns="model", values="time_sec")
 pivot["speedup"] = pivot["ErwinTransformer"] / pivot["ErwinTransformerFlash"]
 print(pivot[["speedup"]].mean())
+
+# Print the stddev of the speedup
+print(pivot[["speedup"]].std())
+
+# Print the full table in latex format
+# print(pivot.to_latex())
