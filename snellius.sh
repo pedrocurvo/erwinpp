@@ -22,37 +22,8 @@ cd $HOME/erwinpp
 
 # srun python setup.py install
 
-# srun pip3 install torch==2.5.0 
-# srun pip3 install torch-cluster -f https://data.pyg.org/whl/torch-2.5.0+cu124.html # CUDA 12.4
-# srun pip3 install numpy 
-# srun pip3 install einops
-# srun pip3 install Cython
-# srun pip3 install setuptools
-# srun pip3 install tqdm
-# srun pip3 install datasets
-# srun pip3 install transformers
-# srun pip3 install accelerate
-# srun pip3 install bitsandbytes
-# srun pip3 install auto-gptq
-# srun pip3 install scikit-learn
-# srun pip3 install huggingface_hub
-# srun pip3 install weasyprint
-# srun pip3 install python-kaleido
-# srun pip3 install torch
-# srun pip3 install numpy
-# srun pip3 install pandas
-# srun pip3 install matplotlib
-# srun pip3 install seaborn
-# srun pip3 install meshio open3d
-# srun pip install addict
-# srun pip install torch-scatter -f https://data.pyg.org/whl/torch-2.5.0+cu124.html # CUDA 12.4
-# srun pip install spconv-cu120
-# srun pip install timm
-# srun pip install h5py
-# srun pip install tensorflow
-# srun pip install wandb
-# srun pip install matplotlib
-# srun pip install tqdm
-# 
+srun pip3 install torch==2.5.0 torch-cluster -f https://data.pyg.org/whl/torch-2.5.0+cu124.html # CUDA 12.4
+srun pip3 install numpy einops Cython setuptools tqdm datasets transformers accelerate bitsandbytes auto-gptq scikit-learn huggingface_hub weasyprint matplotlib seaborn meshio open3d addict torch-cluster torch-scatter spconv-cu120 timm h5py tensorflow wandb matplotlib tqdm h5py tensorflow wandb matplotlib tqdm timm vtk pandas matplotlib seaborn meshio open3d addict spconv-cu120 timm h5py tensorflow wandb
+srun pip3 install torch-scatter -f https://data.pyg.org/whl/torch-2.5.0+cu124.html # CUDA 12.4
 
 srun python train_shapenet.py --data-path shapenet_car/mlcfd_data/preprocessed --experiment shapenet_default
