@@ -181,7 +181,7 @@ class BallMSA(nn.Module):
     def create_attention_mask(self, pos: torch.Tensor):
         """ Distance-based attention bias (eq. 10). """
         pos = rearrange(pos, '(n m) d -> n m d', m=self.ball_size)
-        return self.sigma_att * torch.cdist(pos, pos, p=2).unsqueeze(1)
+        return torch.cdist(pos, pos, p=2).unsqueeze(1)
 
     @torch.no_grad()
     def compute_rel_pos(self, pos: torch.Tensor):
@@ -193,7 +193,7 @@ class BallMSA(nn.Module):
     def forward(self, x: torch.Tensor, pos: torch.Tensor):
         x = x + self.pe_proj(self.compute_rel_pos(pos))
         q, k, v = rearrange(self.qkv(x), "(n m) (H E K) -> K n H m E", H=self.num_heads, m=self.ball_size, K=3)
-        x = F.scaled_dot_product_attention(q, k, v, attn_mask=self.create_attention_mask(pos))
+        x = F.scaled_dot_product_attention(q, k, v, attn_mask=self.sigma_att * self.create_attention_mask(pos))
         x = rearrange(x, "n H m E -> (n m) (H E)", H=self.num_heads, m=self.ball_size)
         return self.proj(x)
 
@@ -304,6 +304,7 @@ class ErwinTransformer(nn.Module):
         self.decode = decode
         self.ball_sizes = ball_sizes
         self.strides = strides
+        self.dimensionality = dimensionality
 
         self.embed = ErwinEmbedding(c_in, c_hidden[0], mp_steps, dimensionality)
 
@@ -370,10 +371,10 @@ class ErwinTransformer(nn.Module):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
     
-    def forward(self, node_features: torch.Tensor, node_positions: torch.Tensor, batch_idx: torch.Tensor, edge_index: torch.Tensor = None, tree_idx: torch.Tensor = None, tree_mask: torch.Tensor = None, radius: float = None, **kwargs):
+    def forward(self, node_features: torch.Tensor, node_positions: torch.Tensor, batch_idx: torch.Tensor, edge_index: torch.Tensor = None, tree_idx: torch.Tensor = None, tree_idx_rot: torch.Tensor = None, tree_mask: torch.Tensor = None, radius: float = None, **kwargs):
         with torch.no_grad():
             # if not given, build the ball tree and radius graph
-            if tree_idx is None and tree_mask is None:
+            if tree_idx is None and tree_mask is None and tree_idx_rot is None:
                 tree_idx, tree_mask, tree_idx_rot = build_balltree_with_rotations(node_positions, batch_idx, self.strides, self.ball_sizes, self.rotate)
             if edge_index is None and self.embed.mp_steps:
                 assert radius is not None, "radius (float) must be provided if edge_index is not given to build radius graph"

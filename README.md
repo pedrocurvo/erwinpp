@@ -1,11 +1,16 @@
-# Erwin Transformer
+<div align="center">
+
 <p align="center">
-    <a href="https://arxiv.org/abs/2502.17019"><strong>Erwin: A Tree-based Hierarchical Transformer for Large-scale Physical Systems</strong></a><br/>
-    <a href="https://maxxxzdn.github.io/">Max Zhdanov</a>, Max Welling, Jan-Willem van de Meent
-    <br/>
-    <br/>
-    <img src="misc/abstract.png" alt="Abstract" width="90%"/>
+  <a href="https://arxiv.org/abs/2502.17019"><img src="misc/abstract.png?raw=True" alt="Figure 1" width="80%"></a>
 </p>
+
+<h3>Erwin: A Tree-based Hierarchical Transformer (ICML 2025)</h3>
+
+<b> Authors: </b> <a href="https://maxxxzdn.github.io/">Maksim Zhdanov</a>, Max Welling, Jan-Willem van de Meent
+
+[ArXiv](https://arxiv.org/abs/2502.17019) | Blog soon | [Example](https://github.com/maxxxzdn/erwin?tab=readme-ov-file#using-erwin)
+
+</div>
 
 ## Trivia
 
@@ -73,7 +78,7 @@ from models import ErwinTransformer
 
 config = {
     'c_in': 32,
-    'c_hidden': 32,
+    'c_hidden': [32, 64, 128, 256, 512],
     'enc_num_heads': [2, 4, 8, 16, 32],
     'enc_depths': [2, 2, 2, 6, 2],
     'dec_num_heads': [4, 4, 8, 16],
@@ -186,13 +191,10 @@ In case you have any ideas for future work based on Erwin or if you see possible
 
 ## BibTeX
 ```
-@misc{zhdanov2025erwintreebasedhierarchicaltransformer,
-      title={Erwin: A Tree-based Hierarchical Transformer for Large-scale Physical Systems}, 
-      author={Maksim Zhdanov and Max Welling and Jan-Willem van de Meent},
-      year={2025},
-      eprint={2502.17019},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG},
-      url={https://arxiv.org/abs/2502.17019}, 
+@inproceedings{zhdanov2025erwin,
+    title={Erwin: A Tree-based Hierarchical Transformer for Large-scale Physical Systems}, 
+    author={Maksim Zhdanov and Max Welling and Jan-Willem van de Meent},
+    booktitle = {International {Conference} on {Machine} {Learning} ({ICML})},
+    year = {2025},
 }
 ```

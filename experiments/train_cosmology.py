@@ -8,9 +8,9 @@ from torch.utils.data import DataLoader
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-from erwin.training import fit
+from erwin.experiments.training import fit
 from erwin.models.erwin import ErwinTransformer
-from erwin.experiments.datasets import CosmologyDataset
+from erwin.experiments.datasets.cosmology import CosmologyDataset
 from erwin.experiments.wrappers import CosmologyModel
 
 
@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     dynamic_model = model_cls[args.model](**model_config)
     model = CosmologyModel(dynamic_model).cuda()
-    # model = torch.compile(model)
+    model = torch.compile(model)
 
     optimizer = AdamW(model.parameters(), lr=args.lr)
     scheduler = CosineAnnealingLR(optimizer, T_max=args.num_epochs, eta_min=1e-6)

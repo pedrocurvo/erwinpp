@@ -3,7 +3,10 @@
 # make sure uv is installed, if not: 
 # curl -LsSf https://astral.sh/uv/install.sh | sh
 
-uv venv erwin
+# for MacOS users:
+# brew install libomp
+
+uv venv erwin --python 3.9
 source erwin/bin/activate
 
 MINIMAL=false
@@ -51,6 +54,6 @@ fi
 
 # install c++ balltree implementation
 cd balltree
-python setup.py install
+uv pip install . --no-build-isolation
 
 cd ..

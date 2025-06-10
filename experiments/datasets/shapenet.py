@@ -70,7 +70,6 @@ class ShapenetCarDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.uris)
 
-    # noinspection PyUnusedLocal
     def getitem_pressure(self, idx):
         p = torch.load(f"{self.uris[idx]}/pressure.th", weights_only=True)
         p -= self.mean

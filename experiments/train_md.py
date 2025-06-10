@@ -8,9 +8,9 @@ from torch.utils.data import DataLoader
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-from erwin.training import fit
+from erwin.experiments.training import fit
 from erwin.models.erwin import ErwinTransformer
-from erwin.experiments.datasets import MDDataset
+from erwin.experiments.datasets.md import MDDataset
 from erwin.experiments.wrappers import MDModel
 
 
@@ -140,6 +140,7 @@ if __name__ == "__main__":
 
     dynamics_model = model_cls[args.model](**model_config)
     model = MDModel(seq_len=train_dataset.seq_len, dynamics_model=dynamics_model).cuda()
+    model = torch.compile(model)
 
     optimizer = AdamW(model.parameters(), lr=args.lr)
     scheduler = CosineAnnealingLR(optimizer, T_max=args.num_epochs, eta_min=1e-7)
