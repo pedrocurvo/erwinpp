@@ -176,6 +176,7 @@ To run/replicate experiments, you will need to download:
 - [Single-chain polymer dataset (MD)](https://zenodo.org/records/6764836) (13 GB) + [splits](https://github.com/kyonofx/mlcgmd/tree/main/graphwm/splits/chain)
 - [EAGLE dataset](https://datasets.liris.cnrs.fr/eagle-version1) (270 GB)
 - [ShapeNet-Car dataset](https://github.com/ml-jku/UPT/blob/main/SETUP_DATA.md) (2 GB) 
+- [PDE Benchmarks](https://drive.google.com/drive/folders/1YBuaoTdOSr_qzaow-G-iwvbUI7fiUzu8) (10 GB)
 
 For the single-chain polymer dataset, download all files and move them to the data folder that contains the `splits` folder.
 
