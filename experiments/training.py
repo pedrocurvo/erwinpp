@@ -50,6 +50,15 @@ def setup_wandb_logging(model, config, project_name="ballformer"):
     wandb.config.update({"num_parameters": sum(p.numel() for p in model.parameters() if p.requires_grad)}, allow_val_change=True)
 
 
+def get_checkpoint_path(config):
+    """Get checkpoint path based on config"""
+    save_dir = config.get('checkpoint_dir', 'checkpoints')
+    if config['model'] in ['erwin', 'pointtransformer']:
+        return os.path.join(save_dir, f"{config['model']}_{config['experiment']}_{config['size']}_{config['seed']}_best.pt")
+    else:
+        return os.path.join(save_dir, f"{config['model']}_{config['experiment']}_{config['seed']}_best.pt")
+
+
 def save_checkpoint(model, optimizer, scheduler, config, val_loss, global_step):
     checkpoint = {
         'model_state_dict': model.state_dict(),
@@ -60,13 +69,8 @@ def save_checkpoint(model, optimizer, scheduler, config, val_loss, global_step):
         'config': config
     }
     
-    save_dir = config.get('checkpoint_dir', 'checkpoints')
-    os.makedirs(save_dir, exist_ok=True)
-    
-    if config['model'] in ['erwin', 'pointtransformer']:
-        checkpoint_path = os.path.join(save_dir, f"{config['model']}_{config['experiment']}_{config['size']}_{config['seed']}_best.pt")
-    else:
-        checkpoint_path = os.path.join(save_dir, f"{config['model']}_{config['experiment']}_{config['seed']}_best.pt")
+    checkpoint_path = get_checkpoint_path(config)
+    os.makedirs(os.path.dirname(checkpoint_path), exist_ok=True)
     torch.save(checkpoint, checkpoint_path)
     
     if config.get("use_wandb", False):
@@ -74,11 +78,7 @@ def save_checkpoint(model, optimizer, scheduler, config, val_loss, global_step):
 
 
 def load_checkpoint(model, optimizer, scheduler, config):
-    save_dir = config.get('checkpoint_dir', 'checkpoints')
-    if config['model'] in ['erwin', 'pointtransformer']:
-        checkpoint_path = os.path.join(save_dir, f"{config['model']}_{config['experiment']}_{config['size']}_{config['seed']}_best.pt")
-    else:
-        checkpoint_path = os.path.join(save_dir, f"{config['model']}_{config['experiment']}_{config['seed']}_best.pt")
+    checkpoint_path = get_checkpoint_path(config)
     
     if not os.path.exists(checkpoint_path):
         raise FileNotFoundError(f"No checkpoint found at {checkpoint_path}")
@@ -93,8 +93,12 @@ def load_checkpoint(model, optimizer, scheduler, config):
     return checkpoint['val_loss'], checkpoint['global_step']
 
 
-def train_step(model, batch, optimizer, scheduler, max_grad_norm, batch_size):
+def train_step(model, batch, optimizer, scheduler, max_grad_norm):
+    model.train()
     optimizer.zero_grad()
+    
+    batch_size = batch['batch_idx'][-1].item() + 1 if model.loss_reduce == "sum" else 1
+
     stat_dict = model.training_step(batch)
     (stat_dict["train/loss"] / batch_size).backward()
 
@@ -113,6 +117,7 @@ def validate(model, val_loader, config):
     model.eval()
     val_stats = {}
     num_batches = 0
+    total_samples = 0
     
     use_tqdm = not config.get("use_wandb", False)
     iterator = tqdm(val_loader, desc="Validation") if use_tqdm else val_loader
@@ -121,17 +126,27 @@ def validate(model, val_loader, config):
         batch = {k: v.cuda() for k, v in batch.items()}
         stat_dict = model.validation_step(batch)
         
+        current_batch_size = batch['batch_idx'][-1].item() + 1
+        
         for k, v in stat_dict.items():
             if k not in val_stats:
                 val_stats[k] = 0
-            val_stats[k] += v.cpu().detach()
+            
+            # For sum reduction, accumulate as-is (they're already sums)
+            # For mean reduction, multiply by batch size to get sum, then accumulate
+            if model.loss_reduce == "sum":
+                val_stats[k] += v.cpu().detach()
+            else:
+                val_stats[k] += v.cpu().detach() * current_batch_size
+        
+        total_samples += current_batch_size
         
         if use_tqdm:
             iterator.set_postfix({"Loss": f"{stat_dict['val/loss'].item():.4f}"})
             
         num_batches += 1
     
-    avg_stats = {f"avg/{k}": v / len(val_loader.dataset) for k, v in val_stats.items()}
+    avg_stats = {f"avg/{k}": v / total_samples for k, v in val_stats.items()}
     return avg_stats
 
 
@@ -155,12 +170,6 @@ def fit(config, model, optimizer, scheduler, train_loader, val_loader, test_load
             model.train()
             batch = {k: v.cuda() for k, v in batch.items()}
 
-            # if loss is reduced by sum, we need to infer the batch size, otherwise set 1 for consistency
-            if model.loss_reduce == "sum":
-                batch_size = batch['batch_idx'][-1].item() + 1
-            else:
-                batch_size = 1
-
             # measure runtime statistics
             if global_step == timing_window_start:
                 timing_start = time.perf_counter()
@@ -174,15 +183,21 @@ def fit(config, model, optimizer, scheduler, train_loader, val_loader, test_load
                 else:
                     print(f"Steps per second: {steps_per_second:.2f}")
             
-            stat_dict = train_step(model, batch, optimizer, scheduler, config['max_grad_norm'], batch_size)
+            stat_dict = train_step(model, batch, optimizer, scheduler, config['max_grad_norm'])
 
+            batch_size = batch['batch_idx'][-1].item() + 1
             samples_processed += batch_size
             
             for k, v in stat_dict.items():
                 if "lr" not in k:
                     if k not in running_train_stats:
                         running_train_stats[k] = 0
-                    running_train_stats[k] += v.cpu().detach()
+                    
+                    # Handle accumulation like in validation
+                    if model.loss_reduce == "sum":
+                        running_train_stats[k] += v.cpu().detach()
+                    else:
+                        running_train_stats[k] += v.cpu().detach() * batch_size
             
             if use_tqdm:
                 loss_keys = [k for k in stat_dict.keys() if "loss" in k]
