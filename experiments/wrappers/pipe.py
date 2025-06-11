@@ -24,6 +24,7 @@ class Positional_Encoder(nn.Module):
 class PipeModel(nn.Module):
     def __init__(self, main_model):
         super().__init__()
+        self.loss_reduce = "sum"
         self.pos_enc = nn.Sequential(Positional_Encoder(main_model.in_dim), nn.LayerNorm(main_model.in_dim))
         self.main_model = main_model
         self.pred_head = nn.Sequential(

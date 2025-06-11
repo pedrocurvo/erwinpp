@@ -154,7 +154,12 @@ def fit(config, model, optimizer, scheduler, train_loader, val_loader, test_load
                 
             model.train()
             batch = {k: v.cuda() for k, v in batch.items()}
-            batch_size = batch['batch_idx'][-1].item() + 1
+
+            # if loss is reduced by sum, we need to infer the batch size, otherwise set 1 for consistency
+            if model.loss_reduce == "sum":
+                batch_size = batch['batch_idx'][-1].item() + 1
+            else:
+                batch_size = 1
 
             # measure runtime statistics
             if global_step == timing_window_start:

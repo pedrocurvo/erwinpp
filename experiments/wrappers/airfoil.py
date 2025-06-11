@@ -24,6 +24,7 @@ class Positional_Encoder(nn.Module):
 class AirfoilModel(nn.Module):
     def __init__(self, main_model):
         super().__init__()
+        self.loss_reduce = "sum"
         self.pos_enc = Positional_Encoder(main_model.in_dim)
         self.pred_head = nn.Sequential(
             nn.Linear(main_model.out_dim, main_model.out_dim),

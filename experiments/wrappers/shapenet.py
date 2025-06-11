@@ -16,6 +16,7 @@ class Positional_Encoder(nn.Module):
 class ShapenetCarModel(nn.Module):
     def __init__(self, main_model):
         super().__init__()
+        self.loss_reduce = "mean"
         self.pos_enc = Positional_Encoder(main_model.in_dim)
         self.main_model = main_model
         self.pred_head = nn.Sequential(

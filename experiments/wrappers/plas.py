@@ -20,6 +20,7 @@ def timestep_embedding(timesteps, dim, max_period=1000):
 class PlasModel(nn.Module):
     def __init__(self, main_model):
         super().__init__()
+        self.loss_reduce = "sum"
         self.enc = nn.Sequential(nn.Linear(main_model.dimensionality + 1 + main_model.in_dim, main_model.in_dim))
         self.time_emb = partial(timestep_embedding, dim=main_model.in_dim)
         self.main_model = main_model

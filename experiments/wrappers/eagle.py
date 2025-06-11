@@ -54,6 +54,7 @@ class EagleModel(nn.Module):
         state_size = 4
         pos_enc_dim = 16
 
+        self.loss_reduce = "mean"
         self.use_pe = use_pe
 
         if use_pe:

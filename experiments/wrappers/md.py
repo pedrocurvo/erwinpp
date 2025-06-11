@@ -18,6 +18,7 @@ class Embedding(nn.Module):
 class MDModel(nn.Module):
     def __init__(self, seq_len, dynamics_model):
         super().__init__()
+        self.loss_reduce = "mean"
         self.embedding_model = Embedding(seq_len=seq_len, out_dim=dynamics_model.in_dim)
         self.dynamics_model = dynamics_model
         self.proj_model = nn.Sequential(

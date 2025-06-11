@@ -5,6 +5,7 @@ import torch.nn as nn
 class ElasModel(nn.Module):
     def __init__(self, main_model):
         super().__init__()
+        self.loss_reduce = "sum"
         self.pos_enc = nn.Linear(main_model.dimensionality, main_model.in_dim)
         self.main_model = main_model
         self.pred_head = nn.Sequential(
