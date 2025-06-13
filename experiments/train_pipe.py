@@ -22,10 +22,10 @@ def parse_args():
                         choices=('mpnn', 'pointtransformer', 'pointnetpp', 'erwin', 'transolver'))
     parser.add_argument("--data-path", type=str, default='/home/mzhdano/data/standard_pde')
     parser.add_argument("--size", type=str, default="small")
-    parser.add_argument("--num-epochs", type=int, default=500)
-    parser.add_argument("--batch-size", type=int)
+    parser.add_argument("--num-epochs", type=int, default=2000)
+    parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--use-wandb", type=int, default=1)
-    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--lr", type=float, default=5e-4)
     parser.add_argument("--wd", type=float, default=1e-5)
     parser.add_argument("--val-every-iter", type=int, default=1000, 
                         help="Validation frequency")
