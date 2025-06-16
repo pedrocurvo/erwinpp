@@ -5,7 +5,7 @@ This module provides the following components:
 """
 
 from .erwin import ErwinTransformer
-from .erwinflash import ErwinTransformer as ErwinFlashTransformer
+from .erwin_flash import ErwinTransformer as ErwinFlashTransformer
 
 __all__ = [
     "ErwinTransformer",
